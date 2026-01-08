@@ -136,7 +136,7 @@ def chat(req: ChatRequest):
                 response = openai_client.chat.completions.create(
                     model=OPENAI_MODEL,
                     messages=openai_messages,
-                    max_tokens=400,
+                    max_completion_tokens=400,
                     temperature=0.5,
                 )
                 answer = response.choices[0].message.content.strip()
