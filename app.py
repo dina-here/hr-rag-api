@@ -151,8 +151,10 @@ def chat(req: ChatRequest):
                 result = response_data.json()
                 answer = result["choices"][0]["message"]["content"].strip()
             except Exception as oe:
-                # Log OpenAI error
+                # Log OpenAI error with full response
                 logger.error(f"OpenAI error: {oe}")
+                if hasattr(oe, 'response'):
+                    logger.error(f"OpenAI response: {oe.response.text if oe.response else 'no response'}")
                 answer = "I'm sorry, I can't answer that. Please contact HR"
         else:
             # No OpenAI configured
