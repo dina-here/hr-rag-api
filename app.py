@@ -137,7 +137,6 @@ def chat(req: ChatRequest):
                     model=OPENAI_MODEL,
                     messages=openai_messages,
                     max_completion_tokens=400,
-                    temperature=0.5,
                 )
                 answer = response.choices[0].message.content.strip()
             except Exception as oe:
