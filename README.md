@@ -41,6 +41,7 @@ pip install -r requirements.txt
   ```
 - Edit `.env` and fill in your actual values:
   - `GEMINI_API_KEY` → Get from [Google AI Studio](https://aistudio.google.com/apikey)
+  - `OPENAI_API_KEY` → Get from [OpenAI Platform](https://platform.openai.com/api-keys) (optional, used as fallback if Gemini quota exceeded)
   - `PINECONE_API_KEY` → Get from [Pinecone Console](https://app.pinecone.io/)
   - `PINECONE_INDEX_HOST` → Your index endpoint (e.g., `hr-9dhfbmk.svc.aped-4627-b74a.pinecone.io`)
   - `PINECONE_NAMESPACE` → Default `hr` (can customize)
@@ -148,7 +149,8 @@ python ingest_hr_docs.py
 This uploads chunks to Pinecone, which Render will then query. No need to re-run unless you update documents.
 
 ## Notes
-- **Embeddings**: Uses `gemini-embedding-001`. If Google returns vectors != your Pinecone dimension, the app downsamples to `EMBED_DIM` (default 768).
+- **Embeddings**: Uses `gemini-embedding-001` with `text-embedding-3-small` (OpenAI) as fallback. Vectors are automatically resized to match `EMBED_DIM` (default 768).
+- **AI Fallback**: If Gemini quota is exceeded, the system automatically switches to OpenAI (if `OPENAI_API_KEY` is configured). Works for both chat generation and embeddings.
 - **Citations**: When `GITHUB_DOC_BASE_URL` is set, source footers link to your hosted docs on GitHub. Leave empty for local file names only.
 - **CORS**: Wide open for demo. For production, update `allow_origins` in [app.py](app.py#L28-L32).
 - **Gemini Quotas**: If you hit rate limits, the API returns a fallback message with sources. Normal responses resume when quota refreshes.

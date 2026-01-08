@@ -7,12 +7,14 @@ from typing import List
 
 from dotenv import load_dotenv
 from google import genai
+from openai import OpenAI
 from pinecone import Pinecone, ServerlessSpec
 from pypdf import PdfReader
 
 load_dotenv()
 
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
 PINECONE_INDEX_HOST = os.environ["PINECONE_INDEX_HOST"]
 PINECONE_NAMESPACE = os.getenv("PINECONE_NAMESPACE", "hr")
@@ -23,6 +25,7 @@ GITHUB_DOC_BASE_URL = os.getenv("GITHUB_DOC_BASE_URL", "")
 # GITHUB_DOC_BASE_URL = os.getenv("GITHUB_DOC_BASE_URL")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
+openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index(host=PINECONE_INDEX_HOST)  # host is your hr-… Pinecone endpoint
 TARGET_DIM = int(os.getenv("EMBED_DIM", "768"))
@@ -51,11 +54,25 @@ def chunk_text(text: str, max_chars: int = 1200, overlap: int = 200) -> List[str
 
 
 def embed(text: str) -> List[float]:
-    res = client.models.embed_content(
-        model="gemini-embedding-001",
-        contents=text,
-    )
-    vec = res.embeddings[0].values
+    """Embed text using Gemini, with OpenAI fallback if quota exceeded."""
+    try:
+        res = client.models.embed_content(
+            model="gemini-embedding-001",
+            contents=text,
+        )
+        vec = res.embeddings[0].values
+    except Exception:
+        # Fallback to OpenAI if Gemini fails and OpenAI is configured
+        if openai_client:
+            response = openai_client.embeddings.create(
+                model="text-embedding-3-small",
+                input=text
+            )
+            vec = response.data[0].embedding
+        else:
+            raise
+    
+    # Ensure dimension matches target
     n = len(vec)
     if n == TARGET_DIM:
         return vec
