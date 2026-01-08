@@ -71,7 +71,7 @@ def health():
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     # 1) Call the “get_hr_policy tool” – same as n8n agent would do
-    docs = get_hr_policy(req.message, top_k=5)
+    docs = get_hr_policy(req.message, top_k=3)
     sources_md = build_sources_markdown(docs)
 
     # Concatenate retrieved snippets for Gemini
