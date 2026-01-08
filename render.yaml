@@ -25,3 +25,5 @@ services:
         value: "768"
       - key: PYTHON_VERSION
         value: "3.12.0"
+      - key: METRICS_RESET_KEY
+        sync: false

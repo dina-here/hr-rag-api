@@ -1,17 +1,17 @@
 # app.py
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import logging
 import requests
 
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 from threading import Lock
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
 from google import genai
 from google.genai import errors as genai_errors
@@ -99,6 +99,67 @@ def metrics():
     """Return simple runtime metrics for usage tracking"""
     with _metrics_lock:
         return METRICS.copy()
+
+
+@app.get("/metrics.json")
+def metrics_json():
+    """Human-readable JSON metrics with uptime."""
+    with _metrics_lock:
+        snapshot = METRICS.copy()
+    try:
+        start_dt = datetime.fromisoformat(snapshot["start_time"])
+    except Exception:
+        start_dt = datetime.now(timezone.utc)
+    uptime = (datetime.now(timezone.utc) - start_dt).total_seconds()
+    snapshot["uptime_seconds"] = int(uptime)
+    return snapshot
+
+
+@app.get("/metrics.txt")
+def metrics_text():
+    """Plain-text human-friendly metrics with uptime."""
+    with _metrics_lock:
+        snapshot = METRICS.copy()
+    try:
+        start_dt = datetime.fromisoformat(snapshot["start_time"])
+    except Exception:
+        start_dt = datetime.now(timezone.utc)
+    uptime = int((datetime.now(timezone.utc) - start_dt).total_seconds())
+    lines = [
+        f"start_time: {snapshot['start_time']}",
+        f"uptime_seconds: {uptime}",
+        f"requests: {snapshot['requests']}",
+        f"errors: {snapshot['errors']}",
+        f"gemini_calls: {snapshot['gemini_calls']}",
+        f"openai_calls: {snapshot['openai_calls']}",
+        f"prompt_tokens: {snapshot['prompt_tokens']}",
+        f"completion_tokens: {snapshot['completion_tokens']}",
+        f"total_tokens: {snapshot['total_tokens']}",
+    ]
+    body = "\n".join(lines) + "\n"
+    return PlainTextResponse(content=body)
+
+
+@app.post("/metrics/reset")
+def metrics_reset(key: Optional[str] = None):
+    """Reset counters; require `METRICS_RESET_KEY` if configured."""
+    expected = os.getenv("METRICS_RESET_KEY")
+    if expected:
+        if not key or key != expected:
+            raise HTTPException(status_code=403, detail="Forbidden")
+    now = datetime.now(timezone.utc).isoformat()
+    with _metrics_lock:
+        METRICS.update({
+            "start_time": now,
+            "requests": 0,
+            "errors": 0,
+            "gemini_calls": 0,
+            "openai_calls": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+        })
+    return {"status": "reset", "start_time": now}
 
 
 @app.post("/chat", response_model=ChatResponse)
