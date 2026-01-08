@@ -23,7 +23,7 @@ SYSTEM_PROMPT_PATH = os.getenv("SYSTEM_PROMPT_PATH", "system_prompt.txt")
 # SYSTEM_PROMPT_PATH = os.getenv("SYSTEM_PROMPT_PATH", "../system_prompt.txt")
 
 MODEL_ID = "gemini-2.0-flash"  # any chat-capable Gemini model you have access to 
-OPENAI_MODEL = "gpt-4o-mini"  # OpenAI fallback model
+OPENAI_MODEL = "gpt-5.1-codex-mini"  # OpenAI fallback model
 SYSTEM_PROMPT = Path(SYSTEM_PROMPT_PATH).read_text(encoding="utf-8")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
