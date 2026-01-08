@@ -102,8 +102,9 @@ def chat(req: ChatRequest):
         )
         answer = result.text.strip()
     except genai_errors.ClientError as e:
-        # If Gemini quota exceeded and OpenAI is configured, use it
-        if e.status_code == 429 and openai_client:
+        # Fallback to OpenAI on Gemini errors when available
+        status = getattr(e, "status_code", None) or getattr(e, "code", None)
+        if openai_client:
             try:
                 # Convert history to OpenAI format
                 openai_messages = [
@@ -123,11 +124,11 @@ def chat(req: ChatRequest):
                     temperature=0.7,
                 )
                 answer = response.choices[0].message.content.strip()
-            except Exception as openai_error:
+            except Exception:
                 # If OpenAI also fails, use fallback
                 answer = "I'm sorry, I can't answer that. Please contact HR"
         else:
-            # No OpenAI configured or different error
+            # No OpenAI configured
             answer = "I'm sorry, I can't answer that. Please contact HR"
 
     # 4) Append our own “Sources” footer (the prompt also asks for this style)
