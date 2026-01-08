@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from typing import List
+import logging
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -14,6 +15,10 @@ from google.genai import errors as genai_errors
 from openai import OpenAI
 
 from rag_backend import get_hr_policy, build_sources_markdown
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -110,8 +115,9 @@ def chat(req: ChatRequest):
         )
         answer = result.text.strip()
     except genai_errors.ClientError as e:
+        # Log Gemini error
+        logger.error(f"Gemini error: {e}")
         # Fallback to OpenAI on Gemini errors when available
-        status = getattr(e, "status_code", None) or getattr(e, "code", None)
         if openai_client:
             try:
                 # Convert history to OpenAI format
@@ -133,12 +139,18 @@ def chat(req: ChatRequest):
                     temperature=0.5,
                 )
                 answer = response.choices[0].message.content.strip()
-            except Exception:
-                # If OpenAI also fails, use fallback
+            except Exception as oe:
+                # Log OpenAI error
+                logger.error(f"OpenAI error: {oe}")
                 answer = "I'm sorry, I can't answer that. Please contact HR"
         else:
             # No OpenAI configured
+            logger.warning("OpenAI client not configured, using fallback")
             answer = "I'm sorry, I can't answer that. Please contact HR"
+    except Exception as e:
+        # Catch any other unexpected errors
+        logger.error(f"Unexpected error in chat: {e}")
+        answer = "I'm sorry, I can't answer that. Please contact HR"
 
     # 4) Append our own “Sources” footer (the prompt also asks for this style)
     answer_with_sources = answer + "\n\n" + sources_md
