@@ -14,12 +14,13 @@ services:
         sync: false
       - key: PINECONE_INDEX_HOST
         sync: false
-      - key: PINECONE_NAMESPACE
+              plan: starter
+              healthCheckPath: /health
         value: hr
       - key: DOCS_DIR
         value: documents
-      - key: GITHUB_DOC_BASE_URL
-        value: https://raw.githubusercontent.com/youruser/yourrepo/main/documents/
+                - key: OPENAI_API_KEY
+                  sync: false
       - key: SYSTEM_PROMPT_PATH
         value: system_prompt.txt
       - key: EMBED_DIM
