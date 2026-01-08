@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: hr-rag-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_INDEX_HOST
+        sync: false
+      - key: PINECONE_NAMESPACE
+        value: hr
+      - key: DOCS_DIR
+        value: documents
+      - key: GITHUB_DOC_BASE_URL
+        value: https://raw.githubusercontent.com/youruser/yourrepo/main/documents/
+      - key: SYSTEM_PROMPT_PATH
+        value: system_prompt.txt
+      - key: EMBED_DIM
+        value: "768"
+      - key: PYTHON_VERSION
+        value: "3.12.0"
