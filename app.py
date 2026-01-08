@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from google import genai
 from google.genai import errors as genai_errors
+from google.genai.types import GenerationConfig
 from openai import OpenAI
 
 from rag_backend import get_hr_policy, build_sources_markdown
@@ -107,10 +108,10 @@ def chat(req: ChatRequest):
         result = client.models.generate_content(
             model=MODEL_ID,
             contents=contents,
-            generation_config={
-                "max_output_tokens": 400,
-                "temperature": 0.5,
-            }
+            config=GenerationConfig(
+                max_output_tokens=400,
+                temperature=0.5,
+            )
         )
         answer = result.text.strip()
     except genai_errors.ClientError as e:
