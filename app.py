@@ -121,24 +121,13 @@ def chat(req: ChatRequest):
         # Fallback to OpenAI on Gemini errors when available
         if openai_client:
             try:
-                # Convert history to OpenAI format
-                openai_messages = [
-                    {"role": "system", "content": system_and_context}
-                ]
-                for m in req.history:
-                    openai_messages.append({
-                        "role": "assistant" if m.role == "model" else m.role,
-                        "content": m.content
-                    })
-                openai_messages.append({"role": "user", "content": message})
-                
-                # Use /v1/completions endpoint for gpt-5.1-codex models (not chat models)
+                # Use /v1/completions endpoint for gpt-5.1-codex models
                 headers = {
                     "Authorization": f"Bearer {OPENAI_API_KEY}",
                     "Content-Type": "application/json"
                 }
-                # Format as prompt for completions endpoint
-                prompt = system_and_context + f"\n\nUser: {message}\nAssistant:"
+                # Format as prompt for completions endpoint - simpler format
+                prompt = f"{system_and_context}\n\nQuestion: {message}\nAnswer:"
                 
                 response_data = requests.post(
                     "https://api.openai.com/v1/completions",
@@ -154,21 +143,13 @@ def chat(req: ChatRequest):
                 result = response_data.json()
                 answer = result["choices"][0]["text"].strip()
             except Exception as oe:
-                # Log OpenAI error with full response
+                # Log OpenAI error
                 logger.error(f"OpenAI error: {oe}")
-                try:
-                    logger.error(f"OpenAI response: {response_data.text}")
-                except:
-                    logger.error("Could not retrieve response text")
                 answer = "I'm sorry, I can't answer that. Please contact HR"
         else:
             # No OpenAI configured
             logger.warning("OpenAI client not configured, using fallback")
             answer = "I'm sorry, I can't answer that. Please contact HR"
-    except Exception as e:
-        # Catch any other unexpected errors
-        logger.error(f"Unexpected error in chat: {e}")
-        answer = "I'm sorry, I can't answer that. Please contact HR"
 
     # 4) Append our own “Sources” footer (the prompt also asks for this style)
     answer_with_sources = answer + "\n\n" + sources_md
