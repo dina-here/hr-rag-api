@@ -29,7 +29,7 @@ SYSTEM_PROMPT_PATH = os.getenv("SYSTEM_PROMPT_PATH", "system_prompt.txt")
 # SYSTEM_PROMPT_PATH = os.getenv("SYSTEM_PROMPT_PATH", "../system_prompt.txt")
 
 MODEL_ID = "gemini-2.0-flash"  # any chat-capable Gemini model you have access to 
-OPENAI_MODEL = "gpt-5.2"  # OpenAI fallback model
+OPENAI_MODEL = "gpt-5.2-chat-latest"  # OpenAI fallback model
 SYSTEM_PROMPT = Path(SYSTEM_PROMPT_PATH).read_text(encoding="utf-8")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -121,7 +121,7 @@ def chat(req: ChatRequest):
         # Fallback to OpenAI on Gemini errors when available
         if openai_client:
             try:
-                # Convert history to OpenAI format for gpt-5.2
+                # Convert history to OpenAI format
                 openai_messages = [
                     {"role": "system", "content": system_and_context}
                 ]
@@ -132,37 +132,14 @@ def chat(req: ChatRequest):
                     })
                 openai_messages.append({"role": "user", "content": message})
                 
-                # Try with /v1/chat/completions first (if gpt-5.2 supports it)
-                try:
-                    response = openai_client.chat.completions.create(
-                        model=OPENAI_MODEL,
-                        messages=openai_messages,
-                        max_tokens=400,
-                        temperature=0.5,
-                    )
-                    answer = response.choices[0].message.content.strip()
-                except Exception as chat_error:
-                    # Fallback to /v1/completions if chat doesn't work
-                    logger.warning(f"Chat endpoint failed: {chat_error}, trying completions endpoint")
-                    headers = {
-                        "Authorization": f"Bearer {OPENAI_API_KEY}",
-                        "Content-Type": "application/json"
-                    }
-                    prompt = f"{system_and_context}\n\nQuestion: {message}\nAnswer:"
-                    
-                    response_data = requests.post(
-                        "https://api.openai.com/v1/completions",
-                        json={
-                            "model": OPENAI_MODEL,
-                            "prompt": prompt,
-                            "max_tokens": 400,
-                            "temperature": 0.5,
-                        },
-                        headers=headers
-                    )
-                    response_data.raise_for_status()
-                    result = response_data.json()
-                    answer = result["choices"][0]["text"].strip()
+                # Call OpenAI with gpt-5.2-chat-latest
+                response = openai_client.chat.completions.create(
+                    model=OPENAI_MODEL,
+                    messages=openai_messages,
+                    max_tokens=400,
+                    temperature=0.5,
+                )
+                answer = response.choices[0].message.content.strip()
             except Exception as oe:
                 # Log OpenAI error
                 logger.error(f"OpenAI error: {oe}")
