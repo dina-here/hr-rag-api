@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import List
 import logging
+import requests
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -131,14 +132,24 @@ def chat(req: ChatRequest):
                     })
                 openai_messages.append({"role": "user", "content": message})
                 
-                # Call OpenAI
-                response = openai_client.chat.completions.create(
-                    model=OPENAI_MODEL,
-                    messages=openai_messages,
-                    max_tokens=400,
-                    temperature=0.5,
+                # Use /v1/responses endpoint for gpt-5.1-codex models
+                headers = {
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json"
+                }
+                response_data = requests.post(
+                    "https://api.openai.com/v1/responses",
+                    json={
+                        "model": OPENAI_MODEL,
+                        "messages": openai_messages,
+                        "max_tokens": 400,
+                        "temperature": 0.5,
+                    },
+                    headers=headers
                 )
-                answer = response.choices[0].message.content.strip()
+                response_data.raise_for_status()
+                result = response_data.json()
+                answer = result["choices"][0]["message"]["content"].strip()
             except Exception as oe:
                 # Log OpenAI error
                 logger.error(f"OpenAI error: {oe}")
