@@ -50,6 +50,11 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: List[Message] = []
+    
+    @property
+    def validated_message(self):
+        """Enforce max 200 characters per message for token control"""
+        return self.message[:200] if len(self.message) > 200 else self.message
 
 
 class ChatResponse(BaseModel):
@@ -70,12 +75,15 @@ def health():
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
-    # 1) Call the “get_hr_policy tool” – same as n8n agent would do
-    docs = get_hr_policy(req.message, top_k=3)
+    # Input validation: limit to 200 chars to control tokens
+    message = req.validated_message
+    
+    # 1) Call the "get_hr_policy tool" – same as n8n agent would do
+    docs = get_hr_policy(message, top_k=3)
     sources_md = build_sources_markdown(docs)
 
-    # Concatenate retrieved snippets for Gemini
-    context = "\n\n".join(f"- {d['text']}" for d in docs)[:4000]
+    # Concatenate retrieved snippets - limit to 2000 chars for token control
+    context = "\n\n".join(f"- {d['text']}" for d in docs)[:2000]
 
     # 2) Build instruction that includes:
     #    - the original system prompt from system_prompt.txt
@@ -90,7 +98,7 @@ def chat(req: ChatRequest):
     contents = [{"role": "user", "parts": [{"text": system_and_context}]}]
     for m in req.history:
         contents.append({"role": m.role, "parts": [{"text": m.content}]})
-    contents.append({"role": "user", "parts": [{"text": req.message}]})
+    contents.append({"role": "user", "parts": [{"text": message}]})
 
     answer = None
     
@@ -99,6 +107,10 @@ def chat(req: ChatRequest):
         result = client.models.generate_content(
             model=MODEL_ID,
             contents=contents,
+            generation_config={
+                "max_output_tokens": 400,
+                "temperature": 0.5,
+            }
         )
         answer = result.text.strip()
     except genai_errors.ClientError as e:
@@ -115,13 +127,14 @@ def chat(req: ChatRequest):
                         "role": "assistant" if m.role == "model" else m.role,
                         "content": m.content
                     })
-                openai_messages.append({"role": "user", "content": req.message})
+                openai_messages.append({"role": "user", "content": message})
                 
                 # Call OpenAI
                 response = openai_client.chat.completions.create(
                     model=OPENAI_MODEL,
                     messages=openai_messages,
-                    temperature=0.7,
+                    max_tokens=400,
+                    temperature=0.5,
                 )
                 answer = response.choices[0].message.content.strip()
             except Exception:
