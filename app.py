@@ -132,16 +132,19 @@ def chat(req: ChatRequest):
                     })
                 openai_messages.append({"role": "user", "content": message})
                 
-                # Use /v1/responses endpoint for gpt-5.1-codex models
+                # Use /v1/completions endpoint for gpt-5.1-codex models (not chat models)
                 headers = {
                     "Authorization": f"Bearer {OPENAI_API_KEY}",
                     "Content-Type": "application/json"
                 }
+                # Format as prompt for completions endpoint
+                prompt = system_and_context + f"\n\nUser: {message}\nAssistant:"
+                
                 response_data = requests.post(
-                    "https://api.openai.com/v1/responses",
+                    "https://api.openai.com/v1/completions",
                     json={
                         "model": OPENAI_MODEL,
-                        "messages": openai_messages,
+                        "prompt": prompt,
                         "max_tokens": 400,
                         "temperature": 0.5,
                     },
@@ -149,12 +152,14 @@ def chat(req: ChatRequest):
                 )
                 response_data.raise_for_status()
                 result = response_data.json()
-                answer = result["choices"][0]["message"]["content"].strip()
+                answer = result["choices"][0]["text"].strip()
             except Exception as oe:
                 # Log OpenAI error with full response
                 logger.error(f"OpenAI error: {oe}")
-                if hasattr(oe, 'response'):
-                    logger.error(f"OpenAI response: {oe.response.text if oe.response else 'no response'}")
+                try:
+                    logger.error(f"OpenAI response: {response_data.text}")
+                except:
+                    logger.error("Could not retrieve response text")
                 answer = "I'm sorry, I can't answer that. Please contact HR"
         else:
             # No OpenAI configured
