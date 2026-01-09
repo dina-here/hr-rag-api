@@ -2,17 +2,13 @@
 
 An AI-powered HR assistant that answers questions about company policies using Retrieval-Augmented Generation (RAG). The system combines large language models (Gemini/OpenAI) with a vector database (Pinecone) to provide accurate, citation-backed answers from internal HR documentation.
 
-<<<<<<< HEAD
+# HR Policy Assistant
+
+An AI-powered HR assistant that answers questions about company policies using Retrieval-Augmented Generation (RAG). The system combines large language models (Gemini/OpenAI) with a vector database (Pinecone) to provide accurate, citation-backed answers from internal HR documentation.
+
 **Live Demo vs Developer Setup:**
 - **Live Demo** (below): Ask questions about pre-loaded example HR policies. Read-only access.
 - **Developer Setup** (clone this repo): Upload your own company policies and customize the assistant for your organization.
-=======
-🚀 Publik länk - Live Demo: https://hr-rag-api.onrender.com/
-
-## Demo
-- **Live API**: Deploy to Render and get a public URL
-- **Local dev**: Run locally with hot-reload
->>>>>>> 81c47f91f1ce2876061636ff27f4c968ca96e872
 
 **How it works:**
 - HR policy documents are embedded into a vector database (Pinecone)
