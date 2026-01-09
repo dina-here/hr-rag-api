@@ -8,7 +8,7 @@ import requests
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 from threading import Lock
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, PlainTextResponse
@@ -45,6 +45,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Suppress logs for /health endpoint (Render health checks)
+@app.middleware("http")
+async def skip_health_logs(request: Request, call_next):
+    response = await call_next(request)
+    # Render's health checks spam logs; skip them
+    if request.url.path == "/health":
+        pass  # No logging for health endpoint
+    return response
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
