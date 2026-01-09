@@ -2,6 +2,8 @@
 
 Small FastAPI + Gemini + Pinecone app. Ingest documents into Pinecone, then serve a chat endpoint that retrieves relevant chunks.
 
+🚀 Publik länk - Live Demo: https://hr-rag-api.onrender.com/
+
 ## Demo
 - **Live API**: Deploy to Render and get a public URL
 - **Local dev**: Run locally with hot-reload
