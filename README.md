@@ -2,10 +2,6 @@
 
 An AI-powered HR assistant that answers questions about company policies using Retrieval-Augmented Generation (RAG). The system combines large language models (Gemini/OpenAI) with a vector database (Pinecone) to provide accurate, citation-backed answers from internal HR documentation.
 
-# HR Policy Assistant
-
-An AI-powered HR assistant that answers questions about company policies using Retrieval-Augmented Generation (RAG). The system combines large language models (Gemini/OpenAI) with a vector database (Pinecone) to provide accurate, citation-backed answers from internal HR documentation.
-
 **Live Demo vs Developer Setup:**
 - **Live Demo** (below): Ask questions about pre-loaded example HR policies. Read-only access.
 - **Developer Setup** (clone this repo): Upload your own company policies and customize the assistant for your organization.
